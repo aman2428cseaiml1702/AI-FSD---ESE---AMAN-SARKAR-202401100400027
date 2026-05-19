@@ -11,11 +11,15 @@ const Login = ({ setAuth }) => {
 
   const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
   const onSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', formData);
+      const res = await axios.post(`${API_URL}/api/auth/login`, formData);
       localStorage.setItem('token', res.data.token);
+      localStorage.setItem('role', res.data.user.role);
+      localStorage.setItem('name', res.data.user.name);
       setAuth(true);
       navigate('/');
     } catch (err) {
@@ -24,8 +28,8 @@ const Login = ({ setAuth }) => {
   };
 
   return (
-    <div className="card" style={{ maxWidth: '400px', margin: '4rem auto' }}>
-      <h2 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>Login to Account</h2>
+    <div style={{ maxWidth: '400px', margin: '4rem auto' }} className="card glass-panel">
+      <h2 style={{ textAlign: 'center', marginBottom: '2rem', color: '#e0aaff' }}>Login to Account</h2>
       {error && <div style={{ color: 'var(--danger-color)', marginBottom: '1rem' }}>{error}</div>}
       <form onSubmit={onSubmit}>
         <div className="form-group">

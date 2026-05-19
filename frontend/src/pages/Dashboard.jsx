@@ -7,6 +7,10 @@ const Dashboard = () => {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [loading, setLoading] = useState(true);
 
+  const userRole = localStorage.getItem('role');
+  const userName = localStorage.getItem('name') || 'User';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
   useEffect(() => {
     fetchComplaints();
   }, []);
@@ -14,7 +18,7 @@ const Dashboard = () => {
   const fetchComplaints = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/complaints', {
+      const res = await axios.get(`${API_URL}/api/complaints`, {
         headers: { 'x-auth-token': token }
       });
       setComplaints(res.data);
@@ -32,7 +36,7 @@ const Dashboard = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get(`http://localhost:5000/api/complaints/search?location=${searchTerm}`, {
+      const res = await axios.get(`${API_URL}/api/complaints/search?location=${searchTerm}`, {
         headers: { 'x-auth-token': token }
       });
       setComplaints(res.data);
@@ -44,7 +48,7 @@ const Dashboard = () => {
   const updateStatus = async (id, status) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/complaints/${id}`, { status }, {
+      await axios.put(`${API_URL}/api/complaints/${id}`, { status }, {
         headers: { 'x-auth-token': token }
       });
       fetchComplaints();
@@ -57,11 +61,36 @@ const Dashboard = () => {
     ? complaints.filter(c => c.category === categoryFilter)
     : complaints;
 
-  if (loading) return <div>Loading...</div>;
+  const totalComplaints = complaints.length;
+  const pendingComplaints = complaints.filter(c => c.status === 'Pending').length;
+  const resolvedComplaints = complaints.filter(c => c.status === 'Resolved').length;
 
   return (
-    <div>
-      <h2 style={{ marginBottom: '2rem' }}>Complaints Dashboard</h2>
+    <div className="dashboard">
+      <h2 style={{ marginBottom: '2rem', fontSize: '2rem', color: '#e0aaff' }}>
+        Welcome, {userName}! {userRole === 'admin' ? '(Admin Dashboard)' : ''}
+      </h2>
+
+      <div className="widgets-grid">
+        <div className="widget glass-panel">
+          <p>Total Complaints</p>
+          <h3>{totalComplaints}</h3>
+        </div>
+        <div className="widget glass-panel">
+          <p>Pending</p>
+          <h3>{pendingComplaints}</h3>
+        </div>
+        <div className="widget glass-panel">
+          <p>Resolved</p>
+          <h3>{resolvedComplaints}</h3>
+        </div>
+        <div className="widget glass-panel" style={{ borderTop: '3px solid #00d2ff' }}>
+          <p>System Status</p>
+          <h3 style={{ background: 'linear-gradient(to right, #00d2ff, #3a7bd5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Online
+          </h3>
+        </div>
+      </div>
 
       <div className="search-bar">
         <input 
@@ -83,11 +112,12 @@ const Dashboard = () => {
           <option value="Water Supply">Water Supply</option>
           <option value="Electricity">Electricity</option>
           <option value="Sanitation">Sanitation</option>
+          <option value="Roads">Roads</option>
           <option value="Other">Other</option>
         </select>
       </div>
 
-      <div className="card table-container">
+      <div className="card glass-panel table-container">
         <table>
           <thead>
             <tr>
@@ -95,7 +125,7 @@ const Dashboard = () => {
               <th>Category</th>
               <th>Location</th>
               <th>Status</th>
-              <th>Actions</th>
+              {userRole === 'admin' && <th>Actions</th>}
             </tr>
           </thead>
           <tbody>
@@ -110,22 +140,26 @@ const Dashboard = () => {
                       {complaint.status}
                     </span>
                   </td>
-                  <td>
-                    <select 
-                      value={complaint.status} 
-                      onChange={(e) => updateStatus(complaint._id, e.target.value)}
-                      style={{ padding: '0.25rem', borderRadius: '0.25rem' }}
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Progress">In Progress</option>
-                      <option value="Resolved">Resolved</option>
-                    </select>
-                  </td>
+                  {userRole === 'admin' && (
+                    <td>
+                      <select 
+                        value={complaint.status} 
+                        onChange={(e) => updateStatus(complaint._id, e.target.value)}
+                        style={{ padding: '0.25rem', borderRadius: '0.25rem' }}
+                      >
+                        <option value="Pending">Pending</option>
+                        <option value="Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                      </select>
+                    </td>
+                  )}
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="5" style={{ textAlign: 'center' }}>No complaints found.</td>
+                <td colSpan="5" style={{ textAlign: 'center' }}>
+                  No complaints found. Add your complaint using <strong>Add Complaint</strong>.
+                </td>
               </tr>
             )}
           </tbody>

@@ -9,7 +9,7 @@ const auth = require('../middleware/auth');
 // @desc    Register user
 // @access  Public
 router.post('/register', async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     try {
         let user = await User.findOne({ email });
@@ -20,7 +20,8 @@ router.post('/register', async (req, res) => {
         user = new User({
             name,
             email,
-            password
+            password,
+            role: role || 'user'
         });
 
         const salt = await bcrypt.genSalt(10);
@@ -30,7 +31,8 @@ router.post('/register', async (req, res) => {
 
         const payload = {
             user: {
-                id: user.id
+                id: user.id,
+                role: user.role
             }
         };
 
@@ -40,7 +42,7 @@ router.post('/register', async (req, res) => {
             { expiresIn: 360000 },
             (err, token) => {
                 if (err) throw err;
-                res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
+                res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
             }
         );
     } catch (err) {
@@ -68,7 +70,8 @@ router.post('/login', async (req, res) => {
 
         const payload = {
             user: {
-                id: user.id
+                id: user.id,
+                role: user.role
             }
         };
 
@@ -78,7 +81,7 @@ router.post('/login', async (req, res) => {
             { expiresIn: 360000 },
             (err, token) => {
                 if (err) throw err;
-                res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
+                res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
             }
         );
     } catch (err) {

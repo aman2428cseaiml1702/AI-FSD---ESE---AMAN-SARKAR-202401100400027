@@ -15,9 +15,13 @@ router.post('/', auth, async (req, res) => {
             return res.status(400).json({ msg: 'Please provide at least title and description' });
         }
 
+        // Fetch user from DB to get actual name and email
+        const User = require('../models/User');
+        const user = await User.findById(req.user.id);
+
         const newComplaint = new Complaint({
-            name: req.user.name || req.body.name || "User", // fallback if name not in req.user
-            email: req.user.email || req.body.email || "email@example.com",
+            name: user ? user.name : "User", 
+            email: user ? user.email : "email@example.com",
             title,
             description,
             category,
@@ -37,7 +41,14 @@ router.post('/', auth, async (req, res) => {
 // @access  Private
 router.get('/', auth, async (req, res) => {
     try {
-        const complaints = await Complaint.find().sort({ createdAt: -1 });
+        let complaints;
+        if (req.user.role === 'admin') {
+            complaints = await Complaint.find().sort({ createdAt: -1 });
+        } else {
+            const User = require('../models/User');
+            const user = await User.findById(req.user.id);
+            complaints = await Complaint.find({ email: user ? user.email : '' }).sort({ createdAt: -1 });
+        }
         res.json(complaints);
     } catch (err) {
         console.error(err.message);
@@ -50,6 +61,10 @@ router.get('/', auth, async (req, res) => {
 // @access  Private
 router.put('/:id', auth, async (req, res) => {
     try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ msg: 'Access denied. Admins only.' });
+        }
+
         const { status } = req.body;
 
         let complaint = await Complaint.findById(req.params.id);
@@ -79,7 +94,15 @@ router.get('/search', auth, async (req, res) => {
         }
 
         // Case-insensitive search using regex
-        const complaints = await Complaint.find({ location: { $regex: location, $options: 'i' } });
+        let query = { location: { $regex: location, $options: 'i' } };
+        
+        if (req.user.role !== 'admin') {
+            const User = require('../models/User');
+            const user = await User.findById(req.user.id);
+            query.email = user ? user.email : '';
+        }
+
+        const complaints = await Complaint.find(query);
         res.json(complaints);
     } catch (err) {
         console.error(err.message);
