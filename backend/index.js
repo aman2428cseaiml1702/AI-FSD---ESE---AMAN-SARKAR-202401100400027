@@ -22,16 +22,17 @@ app.use('/api/complaints', require('./routes/complaints'));
 app.use('/api/ai', require('./routes/ai'));
 
 // Serve frontend
-if (process.env.NODE_ENV === 'production') {
+const fs = require('fs');
+if (process.env.NODE_ENV === 'production' && fs.existsSync(path.join(__dirname, '../frontend/dist'))) {
     app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
-    app.get('*', (req, res) => {
+    app.get('/*', (req, res) => {
         res.sendFile(
             path.resolve(__dirname, '../frontend', 'dist', 'index.html')
         );
     });
 } else {
-    app.get('/', (req, res) => res.send('Please set to production'));
+    app.get('/', (req, res) => res.send('API is running...'));
 }
 
 const PORT = process.env.PORT || 5000;

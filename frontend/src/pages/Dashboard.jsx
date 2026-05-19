@@ -57,6 +57,21 @@ const Dashboard = () => {
     }
   };
 
+  const deleteComplaint = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this complaint?")) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_URL}/api/complaints/${id}`, {
+        headers: { 'x-auth-token': token }
+      });
+      alert('Complaint deleted successfully!');
+      fetchComplaints();
+    } catch (err) {
+      console.error('Error deleting complaint:', err);
+      alert('Failed to delete complaint.');
+    }
+  };
+
   const filteredComplaints = categoryFilter 
     ? complaints.filter(c => c.category === categoryFilter)
     : complaints;
@@ -125,7 +140,7 @@ const Dashboard = () => {
               <th>Category</th>
               <th>Location</th>
               <th>Status</th>
-              {userRole === 'admin' && <th>Actions</th>}
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -140,19 +155,36 @@ const Dashboard = () => {
                       {complaint.status}
                     </span>
                   </td>
-                  {userRole === 'admin' && (
-                    <td>
-                      <select 
-                        value={complaint.status} 
-                        onChange={(e) => updateStatus(complaint._id, e.target.value)}
-                        style={{ padding: '0.25rem', borderRadius: '0.25rem' }}
+                  <td>
+                    {userRole === 'admin' ? (
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <select 
+                          value={complaint.status} 
+                          onChange={(e) => updateStatus(complaint._id, e.target.value)}
+                          style={{ padding: '0.25rem', borderRadius: '0.25rem', background: '#302b63', color: '#fff', border: '1px solid #7b2cbf' }}
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="Progress">In Progress</option>
+                          <option value="Resolved">Resolved</option>
+                        </select>
+                        <button 
+                          className="btn" 
+                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', background: '#e63946', color: '#fff', borderRadius: '0.25rem', border: 'none', cursor: 'pointer' }}
+                          onClick={() => deleteComplaint(complaint._id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        className="btn" 
+                        style={{ padding: '0.25rem 0.5rem', fontSize: '0.8rem', background: '#e63946', color: '#fff', borderRadius: '0.25rem', border: 'none', cursor: 'pointer' }}
+                        onClick={() => deleteComplaint(complaint._id)}
                       >
-                        <option value="Pending">Pending</option>
-                        <option value="Progress">In Progress</option>
-                        <option value="Resolved">Resolved</option>
-                      </select>
-                    </td>
-                  )}
+                        Delete
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))
             ) : (

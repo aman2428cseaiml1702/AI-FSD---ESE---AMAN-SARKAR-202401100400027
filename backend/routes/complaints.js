@@ -110,4 +110,29 @@ router.get('/search', auth, async (req, res) => {
     }
 });
 
+// @route   DELETE api/complaints/:id
+// @desc    Delete Complaint
+// @access  Private
+router.delete('/:id', auth, async (req, res) => {
+    try {
+        let complaint = await Complaint.findById(req.params.id);
+        if (!complaint) return res.status(404).json({ msg: 'Complaint not found' });
+
+        // Admins can delete any, users can only delete their own
+        if (req.user.role !== 'admin') {
+            const User = require('../models/User');
+            const user = await User.findById(req.user.id);
+            if (complaint.email !== (user ? user.email : '')) {
+                return res.status(401).json({ msg: 'User not authorized' });
+            }
+        }
+
+        await Complaint.findByIdAndDelete(req.params.id);
+        res.json({ msg: 'Complaint removed' });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
 module.exports = router;
